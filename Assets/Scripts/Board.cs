@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TicTacToe
@@ -8,9 +9,12 @@ namespace TicTacToe
 
         private string _currentPlayer = "X";
         private bool _isGameOver;
+        
+        private Stack<ICommand> _history;
 
         private static readonly int[][] WinningLines = new int[][]
         {
+            
             new[] { 0, 1, 2 },
             new[] { 3, 4, 5 },
             new[] { 6, 7, 8 },
@@ -24,11 +28,39 @@ namespace TicTacToe
         private void OnEnable()
         {
             GameEvents.CellClicked += OnCellClicked;
+            GameEvents.Undo += OnUndo;
+            GameEvents.GameRestarted += OnRestart;
         }
 
         private void OnDisable()
         {
             GameEvents.CellClicked -= OnCellClicked;
+            GameEvents.Undo -= OnUndo;
+            GameEvents.GameRestarted -= OnRestart;
+        }
+
+        private void OnRestart()
+        {
+            ResetBoard();
+            _history.Clear();
+            _isGameOver = false;
+        }
+
+        private void OnUndo()
+        {
+            if (_history == null || _history.Count == 0)
+            {
+                GameEvents.InvalidMove?.Invoke();
+                return;
+            }
+
+            if (_isGameOver)
+            {
+                GameEvents.UndoWin?.Invoke();
+                _isGameOver = false;
+            }
+            _history.Pop().Undo();
+            _currentPlayer = _currentPlayer == "X" ? "O" : "X";
         }
 
         private void OnCellClicked(Cell cell)
@@ -46,6 +78,12 @@ namespace TicTacToe
             }
 
             cell.SetMark(_currentPlayer);
+            cell.Execute();
+            if (_history == null)
+            {
+                _history = new Stack<ICommand>();
+            }
+            _history.Push(cell);
             GameEvents.MoveMade?.Invoke();
 
             string winner = CheckWinner();
@@ -53,7 +91,8 @@ namespace TicTacToe
             {
                 _isGameOver = true;
                 GameEvents.GameWon?.Invoke(winner);
-                ResetBoard();
+                _currentPlayer = _currentPlayer == "X" ? "O" : "X";
+                //ResetBoard();
                 return;
             }
 
@@ -61,7 +100,8 @@ namespace TicTacToe
             {
                 _isGameOver = true;
                 GameEvents.GameDrawn?.Invoke();
-                ResetBoard();
+                _currentPlayer = _currentPlayer == "X" ? "O" : "X";
+                //ResetBoard();
                 return;
             }
 
