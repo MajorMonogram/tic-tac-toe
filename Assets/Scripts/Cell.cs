@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 
 namespace TicTacToe
 {
-    public class Cell : MonoBehaviour, IPointerClickHandler
+    public class Cell : MonoBehaviour, IPointerClickHandler, ICommand
     {
         [SerializeField] private GameObject _xMark;
         [SerializeField] private GameObject _oMark;
@@ -20,8 +20,17 @@ namespace TicTacToe
         public void SetMark(string mark)
         {
             Mark = mark;
-            _xMark.SetActive(mark == "X");
-            _oMark.SetActive(mark == "O");
+        }
+
+        public void Execute()
+        {
+            _xMark.SetActive(Mark == "X");
+            _oMark.SetActive(Mark == "O");
+        }
+
+        public void Undo()
+        {
+            Clear();
         }
 
         public void Clear()
